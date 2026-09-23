@@ -1,5 +1,3 @@
-# test2.py
-
 import json
 import pandas as pd
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
@@ -9,28 +7,23 @@ import nltk
 
 nltk.download('punkt', quiet=True)
 
-# Загрузка данных
 def load_data(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return pd.DataFrame(data)
 
-# Подготовка данных для Doc2Vec
 def prepare_for_doc2vec(df):
     documents = [TaggedDocument(words=word_tokenize(doc.lower()), tags=[i]) for i, doc in enumerate(df['review_text'])]
     return documents
 
-# Обучение модели Doc2Vec
 def train_doc2vec(documents):
     model = Doc2Vec(documents, vector_size=100, window=2, min_count=1, workers=4, epochs=40)
     return model
 
-# Получение векторных представлений документов
 def get_doc_vectors(model, documents):
     vectors = [model.infer_vector(doc.words) for doc in documents]
     return vectors
 
-# Основная функция
 def main():
     file_path = 'sravni.json'
     df = load_data(file_path)
@@ -38,7 +31,6 @@ def main():
     model = train_doc2vec(documents)
     doc_vectors = get_doc_vectors(model, documents)
 
-    # Иерархическая кластеризация
     clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.5)
     df['cluster'] = clustering.fit_predict(doc_vectors)
 

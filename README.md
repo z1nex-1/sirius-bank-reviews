@@ -1,115 +1,78 @@
-# **Сириус ИИ** Весна 2024
+# Анализ клиентских отзывов о банке
 
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/logo1.png" width="300" />
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/logo2.png" width="150" />
+Проект команды на отборе «Сириус ИИ», весна 2024. Задача — по отзывам клиентов Тинькофф
+понять, чем люди довольны и на что жалуются: собрать отзывы, оценить тональность и выделить
+основные темы.
+
+<p>
+  <img src="second_stage/level2/cluster_3_wordcloud.png" width="49%" alt="Облако слов одного из кластеров">
+  <img src="img/im4.png" width="49%" alt="Локальная модель в LM Studio">
 </p>
 
-## Инструмент для анализа клиентских отзывов
+**Презентация:** [presentationforsirius.pdf](presentationforsirius.pdf)
 
-### Проектная команда:
+## Этап 1. Тональность с помощью локальной LLM
 
-- Кончаков Павел
-- Григорьев Илья
-- Аксенов Владимир
-- Дырков Дмитрий
+Модель **zephyr-7b-beta (Q4_K_S)** запускали в LM Studio как локальный сервер с
+OpenAI-совместимым API. Скрипт отправляет каждый отзыв с просьбой оценить тональность от 1 до
+100, делит отзывы на положительные и отрицательные и строит облака слов для обеих групп вместе
+с самым лучшим и самым худшим отзывом.
 
-________
-
-# 1 Этап
-
-Для первого этапа мы решили использовать модель **zephyr beta 7B Q4_K_S**
-
-Мы запускаем ее в **LM Studio**, а потом уже в программе на языке программирования **python** обращаемся к серверу.
-
-## Демонстрация работы
-
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/im4.png" width="500" />
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img5.png" width="500" />
+<p>
+  <img src="img/img5.png" width="49%" alt="Запрос к модели">
+  <img src="img/img7.png" width="49%" alt="Проблемы клиентов, сформулированные моделью">
 </p>
 
-## Результат
+- `fo_sir_tink/localSemantic.py` — оценка тональности и облака слов
+- `fo_sir_tink/table_excel_load.py` — модель формулирует проблему клиента одной фразой, результат складывается в Excel
+- `fo_sir_tink/wordcloud_base.py` — облака слов без модели, по готовым оценкам
 
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img6.png" width="500" />
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img7.png" width="500" />
+## Этап 2. Сбор отзывов и поиск тем
+
+Собрали отзывы с двух сайтов разными способами:
+
+| | banki.ru | sravni.ru |
+|---|---|---|
+| Инструменты | requests + BeautifulSoup | Selenium + webdriver-manager |
+| Как | обычные GET-запросы по страницам отзывов | браузер листает ленту и раскрывает каждый отзыв кнопкой «Читать» |
+| Очистка | удаление HTML и служебных символов | не нужна |
+
+Дальше тексты привели к одному виду (стоп-слова, стемминг, пунктуация), перевели в TF-IDF
+и разбили KMeans на 10 кластеров. Для каждого кластера программа строит облако слов и
+находит пять самых типичных отзывов, а итог собирает в HTML-отчёт
+[`cluster_analysis.html`](second_stage/level2/cluster_analysis.html). Оценку тональности на
+этом этапе не делали: для русского языка нужна модель уровня BERT, и мы честно оставили это
+на следующий шаг.
+
+<p>
+  <img src="img/img8.png" width="49%" alt="Парсер banki.ru">
+  <img src="img/img13.png" width="49%" alt="TF-IDF и кластеризация">
 </p>
 
-## Видеодемострация работы для первого этапа
+- `second_stage/theme5.ipynb` — парсер banki.ru и предобработка
+- `second_stage/level2/sravnyParser.py` — парсер sravni.ru, результат в `sravni.json`
+- `second_stage/level2/Main.py` — кластеризация, облака слов и HTML-отчёт
+- `second_stage/level2/test*.py` — эксперименты: Doc2Vec, HDBSCAN, n-граммы, VADER
 
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/qr.png" width="300" />
-</p>
+## Запуск
 
-________________________________
+```bash
+pip install -r second_stage/level2/requirements.txt
+cd second_stage/level2
+python Main.py
+```
 
-# 2 Этап
-### Вот второй этап опишем подробно
-## План реализации 
-1. Сбор информации
-2. Чистим от лишнего и структурируем собранные данные для последующего анализа
-3. Извлечение признаков
+Первый этап требует запущенного LM Studio с моделью на `localhost:1234`:
 
-## Сбор информации
-### Для сбора информации мы использовали 2 вида парсерова с 2 источников
+```bash
+pip install -r fo_sir_tink/requirements.txt
+cd fo_sir_tink
+python localSemantic.py
+```
 
-Colons can be used to align columns.
+## Команда
 
-|   Сайт           | banki.ru            | sravni.ru                            |
-| -------------    |:-------------:      | :-----:                               |
-| Что использовали?| **bs4** и **urlib** | **selenium** и **webdriver_manager** |
-| Как работает?    | Просто через **get** запросы     | Ходим по сайт через **ChromeDriver** и нажимем на кнопки |
-
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img8.png" width="450" />
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img9.png" width="550" />
-</p>
-
-## Обработка информации 
-+ Парсер banki.ru потребовал дополнительную чистку от 
-HTML-cимволов для чистки.
-+ Парсер sravni.ru устроен так, что после парсинга не требуется дополнительная чистка.
-
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img10.png" width="500" />
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img11.png" width="500" />
-</p>
-
-## Извлечение признаков
-+ Провели предварительную обработку текстов: удаление стоп-слов, лемматизацию / стемминг, удаление пунктуации. 
-
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img12.png" width="1000" />
-</p>
-
-+ Преобразовали собранные тексты отзывов в векторное представление с использованием методов NLP, таких как TF-IDF. 
-
-<p float="left">
-  <img src="https://github.com/z1nex-1/Sirius_AI/blob/main/img/img13.png" width="1000" />
-</p>
-
-## Анализ и интерпретация отзывов
-+ Использовали полученные признаки для выявления общих тем и тенденций в собранных отзывах. Сделали векторизацию на 10 кластеров. Анализа настроений нет - там надо применять что-то посерьезней ,хотя бы модель типа bert, появляются сложности с русским языком. 
-Такой анализ в HTML-формате генерирует наша программа(только не 4, а 10 кластеров).
-
-### Подробнее о всех этапах нашей работы вы можете узнать в файл **presentationforsirius.pdf**
-
-______
-
-# Вывод
-### Ждем встречи 1 апреля в 13:00!
-
-_____
-# Содержание репозитория
-+ fo_sir_tink - все файлы первого этапа, в которые входят:
-  + req.txt - requierments
-  + localSemantic.py - анализ семантики и распределения всех отзывов на положительные и отрицательные
-  + table_excel_load.py - загрузка отзывов в таблицу excel
-  + wordcloud_base.py - создание облаков слов
-+ second_stage - все файлы второго этапа, а именно:
-  + level2 - папка, содержащая парсер с сайта **sravni.ru** а также 4 тестовых питон файла
-  + theme5.ipynb - блокнот jupiter notebook с парсером для **banki.ru** а также стемминг и лемматизация
-  + LICENSE.chromedriver - лицензия для запуска парсера **sravni.ru**
-+ img - папка с фотографиями для файла README.md
-+ presentationforsirius.pdf - наша презентация
+- Павел Кончаков
+- Илья Григорьев — [z1nex-1](https://github.com/z1nex-1)
+- Владимир Аксенов
+- Дмитрий Дырков

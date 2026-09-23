@@ -9,14 +9,11 @@ from matplotlib.colors import LinearSegmentedColormap
 from collections import Counter
 import os
 
-# Установка базового URL для локального сервера
 openai.api_base = "http://localhost:1234/v1"
 openai.api_key = "not-needed"
 
-# Константы отзывов
 NUM_REVIEWS = 10
 NUM_WORDS = 20
-# Константы для generate_word_clouds
 WORD_CLOUD_WIDTH = 1000
 WORD_CLOUD_HEIGHT = 700
 FIGSIZE = (16, 12)
@@ -27,7 +24,6 @@ hspace = 0.05
 
 print("Ключ API OpenAI загружен успешно")
 
-# Чтение данных из CSV файла
 df = pd.read_csv("samples.csv", delimiter=';', names=['id', 'username', 'review'], encoding='utf-8').head(NUM_REVIEWS)
 print("CSV файл загружен успешно")
 print(f"Количество отзывов: {len(df)}")
@@ -60,11 +56,9 @@ def analyze_sentiment(review):
         print(f"Ошибка: {e}")
         return np.nan
 
-# Применение функции analyze_sentiment к каждому отзыву
 df['sentiment'] = df['review'].apply(analyze_sentiment)
 print("Анализ тональности завершен")
 
-# Вывод самого положительного и самого отрицательного отзыва
 most_positive = df.loc[df['sentiment'].idxmax()]
 most_negative = df.loc[df['sentiment'].idxmin()]
 print("\nСамый положительный отзыв:")
@@ -72,7 +66,6 @@ print(most_positive[['id', 'username', 'review', 'sentiment']])
 print("\nСамый отрицательный отзыв:")
 print(most_negative[['id', 'username', 'review', 'sentiment']])
 
-# Создание настраиваемых цветовых карт
 colors_positive = [(0.0, 'lightgreen'), (1.0, 'darkgreen')]
 cmap_positive = LinearSegmentedColormap.from_list('positive_cmap', colors_positive)
 
@@ -97,22 +90,18 @@ def get_top_words(reviews, excluded_words_file='excluded_words.txt', num_words=N
 def generate_word_clouds(positive_reviews, negative_reviews, most_positive, most_negative):
     fig, ax = plt.subplots(2, 2, figsize=FIGSIZE, facecolor='none', gridspec_kw={'height_ratios': HEIGHT_RATIOS, 'hspace': hspace})
 
-    # Лучший отзыв
     ax[0, 0].text(0.05, 0.5, f"Лучший отзыв:\n\n{most_positive['username']}\n{most_positive['review']}", transform=ax[0, 0].transAxes, va='center', fontsize=FONTSIZE, color='darkgreen')
     ax[0, 0].axis("off")
 
-    # Положительное облако слов
     top_positive_words = get_top_words(positive_reviews)
     wordcloud_pos = WordCloud(width=WORD_CLOUD_WIDTH, height=WORD_CLOUD_HEIGHT, background_color='white', colormap=cmap_positive, max_words=NUM_WORDS).generate_from_frequencies(top_positive_words)
     ax[1, 0].imshow(wordcloud_pos)
     ax[1, 0].set_title("Облако слов для положительных отзывов")
     ax[1, 0].axis("off")
 
-    # Худший отзыв
     ax[0, 1].text(0.05, 0.5, f"Худший отзыв:\n\n{most_negative['username']}\n{most_negative['review']}", transform=ax[0, 1].transAxes, va='center', fontsize=FONTSIZE, color='darkred')
     ax[0, 1].axis("off")
 
-    # Отрицательное облако слов
     top_negative_words = get_top_words(negative_reviews)
     wordcloud_neg = WordCloud(width=WORD_CLOUD_WIDTH, height=WORD_CLOUD_HEIGHT, background_color='white', colormap=cmap_negative, max_words=NUM_WORDS).generate_from_frequencies(top_negative_words)
     ax[1, 1].imshow(wordcloud_neg)

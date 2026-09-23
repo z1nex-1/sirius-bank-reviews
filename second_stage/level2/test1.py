@@ -1,5 +1,3 @@
-# test1.py
-
 import json
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -13,13 +11,11 @@ import nltk
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
 
-# Загрузка данных
 def load_data(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return pd.DataFrame(data)
 
-# Функция предварительной обработки текста
 def preprocess_text(text):
     text = text.translate(str.maketrans('', '', string.punctuation))
     tokens = word_tokenize(text.lower())
@@ -29,7 +25,6 @@ def preprocess_text(text):
     tokens = [stemmer.stem(word) for word in tokens]
     return ' '.join(tokens)
 
-# Основная функция
 def main():
     file_path = 'sravni.json'
     df = load_data(file_path)

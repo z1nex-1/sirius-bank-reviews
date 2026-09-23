@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.session
+*.session-journal
+*.db
+*.sqlite3
+.ipynb_checkpoints/
+.idea/
+.vscode/
+.DS_Store
+dist/
+build/
+*.egg-info/

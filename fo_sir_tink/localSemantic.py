@@ -13,14 +13,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import pandas as pd
-# Установка базового URL для локального сервера
 openai.api_base = "http://localhost:1234/v1"
 openai.api_key = "not-needed"
 app = FastAPI()
-# Константы отзывов
 NUM_REVIEWS = 50
 NUM_WORDS = 40
-# Константы для generate_word_clouds
 WORD_CLOUD_WIDTH = 1000
 WORD_CLOUD_HEIGHT = 700
 FIGSIZE = (16, 12)
@@ -30,7 +27,6 @@ hspace = 0.05
 
 print("Ключ API OpenAI загружен успешно")
 
-# Чтение данных из CSV файла
 df = pd.read_csv("samples.csv", delimiter=';', names=['id', 'username', 'review'], encoding='utf-8').head(NUM_REVIEWS)
 print("CSV файл загружен успешно")
 print(f"Количество отзывов: {len(df)}")
@@ -63,13 +59,13 @@ def analyze_sentiment(review):
     ]
 
     try:
-        start_time = time.time()  # Засекаем время начала запроса
+        start_time = time.time()
         completion = openai.ChatCompletion.create(
             model="local-model",
             messages=messages,
             temperature=0.7,
         )
-        end_time = time.time()  # Засекаем время окончания запроса
+        end_time = time.time()
 
         response = completion.choices[0].message.content.strip()
         score_match = re.search(r'(\d+)', response)
@@ -87,11 +83,9 @@ def analyze_sentiment(review):
         print(f"Ошибка: {e}")
         return np.nan
 
-# Применение функции analyze_sentiment к каждому отзыву
 df['sentiment'] = df['review'].apply(analyze_sentiment)
 print("Анализ тональности завершен")
 
-# Вывод самого положительного и самого отрицательного отзыва
 most_positive = df.loc[df['sentiment'].idxmax()]
 most_negative = df.loc[df['sentiment'].idxmin()]
 print("\nСамый положительный отзыв:")
@@ -99,7 +93,6 @@ print(most_positive[['id', 'username', 'review', 'sentiment']])
 print("\nСамый отрицательный отзыв:")
 print(most_negative[['id', 'username', 'review', 'sentiment']])
 
-# Создание настраиваемых цветовых карт
 colors_positive = [(0.0, 'lightgreen'), (1.0, 'darkgreen')]
 cmap_positive = LinearSegmentedColormap.from_list('positive_cmap', colors_positive)
 
@@ -124,11 +117,9 @@ def get_top_words(reviews, excluded_words_file='excluded_words.txt', num_words=N
 def generate_word_clouds(positive_reviews, negative_reviews, most_positive, most_negative):
     fig, ax = plt.subplots(2, 2, figsize=FIGSIZE, facecolor='none', gridspec_kw={'height_ratios': HEIGHT_RATIOS, 'hspace': hspace})
 
-    # Лучший отзыв
     ax[0, 0].text(0.05, 0.5, f"Лучший отзыв:\n\n{most_positive['username']}\n{most_positive['review']}", transform=ax[0, 0].transAxes, va='center', fontsize=FONTSIZE, color='darkgreen')
     ax[0, 0].axis("off")
 
-    # Положительное облако слов
     top_positive_words = get_top_words(positive_reviews)
     if top_positive_words:
         wordcloud_pos = WordCloud(width=WORD_CLOUD_WIDTH, height=WORD_CLOUD_HEIGHT, background_color='white', colormap=cmap_positive, max_words=NUM_WORDS).generate_from_frequencies(top_positive_words)
@@ -139,11 +130,9 @@ def generate_word_clouds(positive_reviews, negative_reviews, most_positive, most
         ax[1, 0].text(0.5, 0.5, "Нет данных для облака слов", transform=ax[1, 0].transAxes, va='center', ha='center', fontsize=FONTSIZE, color='black')
         ax[1, 0].axis("off")
 
-    # Худший отзыв
     ax[0, 1].text(0.05, 0.5, f"Худший отзыв:\n\n{most_negative['username']}\n{most_negative['review']}", transform=ax[0, 1].transAxes, va='center', fontsize=FONTSIZE, color='darkred')
     ax[0, 1].axis("off")
 
-    # Отрицательное облако слов
     top_negative_words = get_top_words(negative_reviews)
     if top_negative_words:
         wordcloud_neg = WordCloud(width=WORD_CLOUD_WIDTH, height=WORD_CLOUD_HEIGHT, background_color='white', colormap=cmap_negative, max_words=NUM_WORDS).generate_from_frequencies(top_negative_words)
@@ -157,13 +146,11 @@ def generate_word_clouds(positive_reviews, negative_reviews, most_positive, most
     plt.tight_layout(pad=0, w_pad=2)
     plt.show()
 
-# Запись в файл положительных отзывов
 positive_file_path = 'positive_reviews.txt'
 with open(positive_file_path, 'w', encoding='utf-8') as positive_file:
     positive_file.write('\n\n'.join(df[df['sentiment'] >= 80]['review'].tolist()))
 print(f"\nПоложительные отзывы записаны в файл: {positive_file_path}")
 
-# Запись в файл отрицательных отзывов
 negative_file_path = 'negative_reviews.txt'
 with open(negative_file_path, 'w', encoding='utf-8') as negative_file:
     negative_file.write('\n\n'.join(df[df['sentiment'] < 80]['review'].tolist()))
